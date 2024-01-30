@@ -15,6 +15,7 @@ KEY_UP    = 265
 section '.text' executable
 public _start
 
+extrn GetRandomValue
 extrn printf
 extrn _exit
 extrn InitWindow
@@ -53,10 +54,19 @@ _start:
 	mov r8d, 0xfff5f5f5
 	call DrawRectangle
 
+	mov rdi, [prizeposition.x]
+	mov rsi, [prizeposition.y]
+	mov rdx, 10
+	mov rcx, 10
+	mov r8d, 0xff53873e 
+	call DrawRectangle
+
+
 	mov rdi, buffer
 	mov rsi, velocitystring
 	mov rdx, [velocity.x]
 	mov rcx, [velocity.y]
+	mov r8d, [score]
 	call sprintf
 	;RLAPI void DrawText(const char *text, int posX, int posY, int fontSize, Color color);       // Draw text (using default font)
 	mov rdi, buffer
@@ -107,6 +117,35 @@ macro checkboarders velocity, position, boarder, condition {
 	add rax, [velocity.y]
 	mov [position.y], rax
 
+	mov rax, [prizeposition.x]
+	mov rsi, [position.x]
+	cmp rax, rsi
+	jle .nocollision
+	add rsi, SQUAREWIDTH
+	cmp rax, rsi 
+	jge .nocollision
+	;is within x wise
+	mov rax, [prizeposition.y]
+	mov rsi, [position.y]
+	cmp rax, rsi
+	jle .nocollision
+	add rsi, SQUAREHEIGHT
+	cmp rax, rsi 
+	jge .nocollision
+	;collision
+  ;RLAPI int GetRandomValue(int min, int max);                       // Get a random value between min and max (both included)
+	add qword [score], 1
+	mov rdi, 0
+	mov rsi, WIDTH
+	call GetRandomValue
+	mov [prizeposition.x], rax
+
+	mov rdi, 0
+	mov rsi, HEIGHT
+	call GetRandomValue
+	mov [prizeposition.y], rax
+
+.nocollision:
 
 	call WindowShouldClose
 	test rax, rax
@@ -128,5 +167,7 @@ position vec2 100,100
 velocity vec2 0,0
 
 buffer: times 256 db 0
-velocitystring: db "vx: %d, vy: %d", 0
+velocitystring: db "vx: %d, vy: %d, score: %d", 0
 
+prizeposition vec2 110, 110
+score: dq 0
